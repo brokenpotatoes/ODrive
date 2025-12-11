@@ -1,19 +1,18 @@
 ## Important Note
+This REPO is unaffiliated with ODrive. Do NOT contact ODrive with any issues.
 
-The firmware in this repository is compatible with the ODrive v3.x (NRND) and is no longer under active development.
+This is a mod of the original ODrive fw v0.5.6 to run on MKS XDRIVE MINI. The MKS ships with extremely buggy 0.5.1 firmware and is effectively unusable without a firmware update.
 
-Firmware for the new generation of ODrives ([ODrive Pro](https://odriverobotics.com/shop/odrive-pro), [S1](https://odriverobotics.com/shop/odrive-s1), [Micro](https://odriverobotics.com/shop/odrive-micro), etc.) is currently being actively maintained and developed, however its source code is currently not publicly available. Access may be available under NDA, please [reach out to us](mailto:info@odriverobotics.com) for inquiries.
+CHANGES:
+- Removed axis1
+- Bypassed OTP validation
+TO DO:
+- Add the possibility to build firmware for original ODrives from this fork
+- Instead of bypassing the OTP flash a valid OTP to the MKS
 
 ## Overview
 
-![ODrive Logo](https://static1.squarespace.com/static/58aff26de4fcb53b5efd2f02/t/59bf2a7959cc6872bd68be7e/1505700483663/Odrive+logo+plus+text+black.png?format=1000w)
-
 This project is all about accurately driving brushless motors, for cheap. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects, like [this](https://www.youtube.com/watch?v=WT4E5nb3KtY).
-
-| Branch | Build Status |
-|--------|--------------|
-| master | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=master)](https://travis-ci.org/madcowswe/ODrive) |
-| devel  | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=devel)](https://travis-ci.org/madcowswe/ODrive) |
 
 [![pip install odrive (nightly)](https://github.com/madcowswe/ODrive/workflows/pip%20install%20odrive%20(nightly)/badge.svg)](https://github.com/madcowswe/ODrive/actions?query=workflow%3A%22pip+install+odrive+%28nightly%29%22)
 
