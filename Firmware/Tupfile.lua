@@ -419,11 +419,13 @@ print('Using python command "'..python_command..'"')
 -- }
 
 -- Autogen files from YAML interface definitions
+-- Pass YAML via stdin instead of file to avoid Tup's file descriptor interception
 root_interface = board.include[1].root_interface
-tup.frule{inputs={'fibre-cpp/interfaces_template.j2', extra_inputs='odrive-interface.yaml'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
-tup.frule{inputs={'fibre-cpp/function_stubs_template.j2', extra_inputs='odrive-interface.yaml'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
-tup.frule{inputs={'fibre-cpp/endpoints_template.j2', extra_inputs='odrive-interface.yaml'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --generate-endpoints '..root_interface..' --template %f --output %o', outputs='autogen/endpoints.hpp'}
-tup.frule{inputs={'fibre-cpp/type_info_template.j2', extra_inputs='odrive-interface.yaml'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
+yaml_file = tup.getcwd() .. '/odrive-interface.yaml'
+tup.frule{inputs={'fibre-cpp/interfaces_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template %f --output %o', outputs='autogen/interfaces.hpp'}
+tup.frule{inputs={'fibre-cpp/function_stubs_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template %f --output %o', outputs='autogen/function_stubs.hpp'}
+tup.frule{inputs={'fibre-cpp/endpoints_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --generate-endpoints '..root_interface..' --template %f --output %o', outputs='autogen/endpoints.hpp'}
+tup.frule{inputs={'fibre-cpp/type_info_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template %f --output %o', outputs='autogen/type_info.hpp'}
 
 
 add_pkg(board)

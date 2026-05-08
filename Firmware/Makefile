@@ -9,10 +9,16 @@ PROGRAMMER_CMD=$(if $(value PROGRAMMER),-c 'hla_serial $(PROGRAMMER)',)
 
 include tup.config # source build configuration to get CONFIG_BOARD_VERSION
 
-ifeq ($(shell python -c "import sys; print(sys.version_info.major)"), 3)
-	PY_CMD := python -B
+PYTHON ?= $(shell if command -v python3 >/dev/null 2>&1; then echo python3; elif command -v python >/dev/null 2>&1; then echo python; fi)
+
+ifeq ($(PYTHON),)
+  $(error Python 3 not found. Install python3 or set PYTHON=/path/to/python3)
+endif
+
+ifeq ($(shell $(PYTHON) -c "import sys; print(sys.version_info.major)"), 3)
+	PY_CMD := $(PYTHON) -B
 else
-	PY_CMD := python3 -B
+  $(error Python 3 is required. Found $(PYTHON), but it is not Python 3)
 endif
 
 ifneq (,$(findstring v3.,$(CONFIG_BOARD_VERSION)))
@@ -61,7 +67,7 @@ libfibre-all:
 	cp /tmp/libfibre-build/libfibre-wasm.* ../GUI/fibre-js/
 
 clean:
-	-rm -fR .dep $(BUILD_DIR)
+	-rm -fR .dep $(BUILD_DIR) .tup autogen
 
 flash-stlink2: all
 	$(OPENOCD) \
@@ -97,7 +103,7 @@ gdb-bmp: all
 		--ex 'load' $(FIRMWARE)
 
 dfu: all
-	python ../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
+	$(PY_CMD) ../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
 
 flash: flash-stlink2
 gdb: gdb-stlink2

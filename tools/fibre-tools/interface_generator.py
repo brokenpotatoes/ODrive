@@ -32,6 +32,7 @@ definitions:
       __line__: {type: object}
       __column__: {type: object}
     required: [c_is_class]
+
     additionalProperties: false
 
   valuetype:
@@ -486,7 +487,7 @@ def generate_endpoint_table(intf, bindto, idx):
     cnt = 0
 
     for k, prop in intf.get_all_attributes().items():
-        property_value_type = re.findall('^fibre\.Property<([^>]*), (readonly|readwrite)>$', prop['type'].fullname)
+        property_value_type = re.findall(r'^fibre\.Property<([^>]*), (readonly|readwrite)>$', prop['type'].fullname)
         #attr_bindto = join_name(bindto, bindings_map.get(join_name(intf['fullname'], k), k + ('_' if len(intf['functions']) or (intf['fullname'] in treat_as_classes) else '')))
         attr_bindto = intf.c_name + '::get_' + prop['name'] + '(' + bindto + ')'
         if len(property_value_type):
@@ -548,7 +549,7 @@ parser.add_argument("--version", action="store_true",
                     help="print version information")
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="print debug information (on stderr)")
-parser.add_argument("-d", "--definitions", type=argparse.FileType('r', encoding='utf-8'), nargs='+',
+parser.add_argument("-d", "--definitions", type=str, nargs='+',
                     help="the YAML interface definition file(s) used to generate the code")
 parser.add_argument("-t", "--template", type=argparse.FileType('r', encoding='utf-8'),
                     help="the code template")
@@ -572,9 +573,11 @@ template_file = args.template
 
 # Load definition files
 
-for definition_file in definition_files:
+for definition_file_path in definition_files:
     try:
-        file_content = yaml.load(definition_file, Loader=SafeLineLoader)
+        with open(definition_file_path, 'r', encoding='utf-8') as definition_file:
+            content_str = definition_file.read()
+            file_content = yaml.load(content_str, Loader=SafeLineLoader)
     except yaml.scanner.ScannerError as ex:
         print("YAML parsing error: " + str(ex), file=sys.stderr)
         sys.exit(1)
