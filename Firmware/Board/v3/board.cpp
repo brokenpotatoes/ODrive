@@ -43,12 +43,14 @@ Drv8301 m0_gate_driver{
     {nFAULT_GPIO_Port, nFAULT_Pin} // nFAULT pin (shared between both motors)
 };
 
-//Drv8301 m1_gate_driver{
-//    &spi3_arbiter,
-//    {M1_nCS_GPIO_Port, M1_nCS_Pin}, // nCS
-//    {}, // EN pin (shared between both motors, therefore we actuate it outside of the drv8301 driver)
-//    {nFAULT_GPIO_Port, nFAULT_Pin} // nFAULT pin (shared between both motors)
-//};
+#if AXIS_COUNT > 1
+Drv8301 m1_gate_driver{
+    &spi3_arbiter,
+    {M1_nCS_GPIO_Port, M1_nCS_Pin}, // nCS
+    {}, // EN pin (shared between both motors, therefore we actuate it outside of the drv8301 driver)
+    {nFAULT_GPIO_Port, nFAULT_Pin} // nFAULT pin (shared between both motors)
+};
+#endif
 
 const float fet_thermistor_poly_coeffs[] =
     {363.93910201f, -462.15369634f, 307.55129571f, -27.72569531f};
@@ -59,15 +61,18 @@ OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT] = {
         15, // adc_channel
         &fet_thermistor_poly_coeffs[0], // coefficients
         fet_thermistor_num_coeffs // num_coeffs
-    }//, {
-//#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-//        4, // adc_channel
-//#else
-//        1, // adc_channel
-//#endif
-//        &fet_thermistor_poly_coeffs[0], // coefficients
-//        fet_thermistor_num_coeffs // num_coeffs
-//    }
+    }
+#if AXIS_COUNT > 1
+    , {
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+        4, // adc_channel
+#else
+        1, // adc_channel
+#endif
+        &fet_thermistor_poly_coeffs[0], // coefficients
+        fet_thermistor_num_coeffs // num_coeffs
+    }
+#endif
 };
 
 OffboardThermistorCurrentLimiter motor_thermistors[AXIS_COUNT];
@@ -81,16 +86,18 @@ Motor motors[AXIS_COUNT] = {
         m0_gate_driver, // opamp
         fet_thermistors[0],
         motor_thermistors[0]
-    }//,
-//    {
-//        &htim8, // timer
-//        0b110, // current_sensor_mask
-//        1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
-//        m1_gate_driver, // gate_driver
-//        m1_gate_driver, // opamp
-//        fet_thermistors[1],
-//        motor_thermistors[1]
-//    }
+    }
+#if AXIS_COUNT > 1
+    , {
+        &htim8, // timer
+        0b110, // current_sensor_mask
+        1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
+        m1_gate_driver, // gate_driver
+        m1_gate_driver, // opamp
+        fet_thermistors[1],
+        motor_thermistors[1]
+    }
+#endif
 };
 
 Encoder encoders[AXIS_COUNT] = {
@@ -101,15 +108,17 @@ Encoder encoders[AXIS_COUNT] = {
         {M0_ENC_B_GPIO_Port, M0_ENC_B_Pin}, // hallB_gpio
         {M0_ENC_Z_GPIO_Port, M0_ENC_Z_Pin}, // hallC_gpio
         &spi3_arbiter // spi_arbiter
-    }//,
-//    {
-//        &htim4, // timer
-//        {M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin}, // index_gpio
-//        {M1_ENC_A_GPIO_Port, M1_ENC_A_Pin}, // hallA_gpio
-//        {M1_ENC_B_GPIO_Port, M1_ENC_B_Pin}, // hallB_gpio
-//        {M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin}, // hallC_gpio
-//        &spi3_arbiter // spi_arbiter
-//    }
+    }
+#if AXIS_COUNT > 1
+    , {
+        &htim4, // timer
+        {M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin}, // index_gpio
+        {M1_ENC_A_GPIO_Port, M1_ENC_A_Pin}, // hallA_gpio
+        {M1_ENC_B_GPIO_Port, M1_ENC_B_Pin}, // hallB_gpio
+        {M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin}, // hallC_gpio
+        &spi3_arbiter // spi_arbiter
+    }
+#endif
 };
 
 // TODO: this has no hardware dependency and should be allocated depending on config
@@ -134,24 +143,26 @@ std::array<Axis, AXIS_COUNT> axes{{
         endstops[0], endstops[1], // min_endstop, max_endstop
         mechanical_brakes[0], // mechanical brake
     },
-//    {
-//        1, // axis_num
-//#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
-//        7, // step_gpio_pin
-//        8, // dir_gpio_pin
-//#else
-//        3, // step_gpio_pin
-//        4, // dir_gpio_pin
-//#endif
-//        osPriorityHigh, // thread_priority
-//        encoders[1], // encoder
-//        sensorless_estimators[1], // sensorless_estimator
-//        controllers[1], // controller
-//        motors[1], // motor
-//        trap[1], // trap
-//        endstops[2], endstops[3], // min_endstop, max_endstop
-//        mechanical_brakes[1], // mechanical brake
-//    },
+#if AXIS_COUNT > 1
+    {
+        1, // axis_num
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+        7, // step_gpio_pin
+        8, // dir_gpio_pin
+#else
+        3, // step_gpio_pin
+        4, // dir_gpio_pin
+#endif
+        osPriorityHigh, // thread_priority
+        encoders[1], // encoder
+        sensorless_estimators[1], // sensorless_estimator
+        controllers[1], // controller
+        motors[1], // motor
+        trap[1], // trap
+        endstops[2], endstops[3], // min_endstop, max_endstop
+        mechanical_brakes[1], // mechanical brake
+    },
+#endif
 }};
 
 
@@ -172,9 +183,15 @@ Stm32Gpio gpios[] = {
     {GPIOB, GPIO_PIN_4}, // ENC0_A
     {GPIOB, GPIO_PIN_5}, // ENC0_B
     {GPIOA, GPIO_PIN_15}, // ENC0_Z
+#if AXIS_COUNT > 1
     {GPIOB, GPIO_PIN_6}, // ENC1_A
     {GPIOB, GPIO_PIN_7}, // ENC1_B
     {GPIOB, GPIO_PIN_3}, // ENC1_Z
+#else
+    {nullptr, 0}, // ENC1_A (not used on single-axis SKU)
+    {nullptr, 0}, // ENC1_B (not used on single-axis SKU)
+    {nullptr, 0}, // ENC1_Z (not used on single-axis SKU)
+#endif
     {GPIOB, GPIO_PIN_8}, // CAN_R
     {GPIOB, GPIO_PIN_9}, // CAN_D
 };
@@ -194,9 +211,15 @@ Stm32Gpio gpios[] = {
     {GPIOB, GPIO_PIN_4}, // ENC0_A
     {GPIOB, GPIO_PIN_5}, // ENC0_B
     {GPIOA, GPIO_PIN_15}, // ENC0_Z
+#if AXIS_COUNT > 1
     {GPIOB, GPIO_PIN_6}, // ENC1_A
     {GPIOB, GPIO_PIN_7}, // ENC1_B
     {GPIOB, GPIO_PIN_3}, // ENC1_Z
+#else
+    {nullptr, 0}, // ENC1_A (not used on single-axis SKU)
+    {nullptr, 0}, // ENC1_B (not used on single-axis SKU)
+    {nullptr, 0}, // ENC1_Z (not used on single-axis SKU)
+#endif
     {GPIOB, GPIO_PIN_8}, // CAN_R
     {GPIOB, GPIO_PIN_9}, // CAN_D
 };
@@ -216,9 +239,15 @@ Stm32Gpio gpios[GPIO_COUNT] = {
     {GPIOB, GPIO_PIN_4}, // ENC0_A
     {GPIOB, GPIO_PIN_5}, // ENC0_B
     {GPIOC, GPIO_PIN_9}, // ENC0_Z
+#if AXIS_COUNT > 1
     {GPIOB, GPIO_PIN_6}, // ENC1_A
     {GPIOB, GPIO_PIN_7}, // ENC1_B
     {GPIOC, GPIO_PIN_15}, // ENC1_Z
+#else
+    {nullptr, 0}, // ENC1_A (not used on single-axis SKU)
+    {nullptr, 0}, // ENC1_B (not used on single-axis SKU)
+    {nullptr, 0}, // ENC1_Z (not used on single-axis SKU)
+#endif
     {GPIOB, GPIO_PIN_8}, // CAN_R
     {GPIOB, GPIO_PIN_9}, // CAN_D
 };
@@ -247,8 +276,13 @@ std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT] = {
     /* ENC0_A: */ {{{ODrive::GPIO_MODE_ENC0, GPIO_AF2_TIM3}}},
     /* ENC0_B: */ {{{ODrive::GPIO_MODE_ENC0, GPIO_AF2_TIM3}}},
     /* ENC0_Z: */ {{}},
+#if AXIS_COUNT > 1
     /* ENC1_A: */ {{{ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}, {ODrive::GPIO_MODE_ENC1, GPIO_AF2_TIM4}}},
     /* ENC1_B: */ {{{ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}, {ODrive::GPIO_MODE_ENC1, GPIO_AF2_TIM4}}},
+#else
+    /* ENC1_A: */ {{{ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
+    /* ENC1_B: */ {{{ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
+#endif
     /* ENC1_Z: */ {{}},
     /* CAN_R: */ {{{ODrive::GPIO_MODE_CAN_A, GPIO_AF9_CAN1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
     /* CAN_D: */ {{{ODrive::GPIO_MODE_CAN_A, GPIO_AF9_CAN1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
@@ -298,7 +332,9 @@ bool board_init() {
     MX_TIM1_Init();
     MX_TIM8_Init();
     MX_TIM3_Init();
+#if AXIS_COUNT > 1
     MX_TIM4_Init();
+#endif
     MX_SPI3_Init();
     MX_ADC3_Init();
     MX_TIM2_Init();
@@ -435,13 +471,15 @@ static bool fetch_and_reset_adcs(
         }
     }
 
-    //if (m1_gate_driver.is_ready()) {
-    //   std::optional<float> phB = motors[1].phase_current_from_adcval(ADC2->DR);
-    //    std::optional<float> phC = motors[1].phase_current_from_adcval(ADC3->DR);
-    //    if (phB.has_value() && phC.has_value()) {
-    //        *current1 = {-*phB - *phC, *phB, *phC};
-    //    }
-    //}
+#if AXIS_COUNT > 1
+    if (m1_gate_driver.is_ready()) {
+       std::optional<float> phB = motors[1].phase_current_from_adcval(ADC2->DR);
+        std::optional<float> phC = motors[1].phase_current_from_adcval(ADC3->DR);
+        if (phB.has_value() && phC.has_value()) {
+            *current1 = {-*phB - *phC, *phB, *phC};
+        }
+    }
+#endif
     
     ADC1->SR = ~(ADC_SR_JEOC);
     ADC2->SR = ~(ADC_SR_EOC | ADC_SR_JEOC | ADC_SR_OVR);
@@ -488,7 +526,9 @@ void TIM8_UP_TIM13_IRQHandler(void) {
     bool timer_update_missed = (counting_down_ == counting_down);
     if (timer_update_missed) {
         motors[0].disarm_with_error(Motor::ERROR_TIMER_UPDATE_MISSED);
-        //motors[1].disarm_with_error(Motor::ERROR_TIMER_UPDATE_MISSED);
+#if AXIS_COUNT > 1
+        motors[1].disarm_with_error(Motor::ERROR_TIMER_UPDATE_MISSED);
+#endif
         return;
     }
     counting_down_ = counting_down;
@@ -525,7 +565,9 @@ void ControlLoop_IRQHandler(void) {
 
     if (!fetch_and_reset_adcs(&current0, &current1)) {
         motors[0].disarm_with_error(Motor::ERROR_BAD_TIMING);
-        //motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
+#if AXIS_COUNT > 1
+        motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
+#endif
     }
 
     // If the motor FETs are not switching then we can't measure the current
@@ -536,12 +578,16 @@ void ControlLoop_IRQHandler(void) {
     if (!(TIM1->BDTR & TIM_BDTR_MOE_Msk)) {
         current0 = {0.0f, 0.0f};
     }
-    //if (!(TIM8->BDTR & TIM_BDTR_MOE_Msk)) {
-    //    current1 = {0.0f, 0.0f};
-    //}
+#if AXIS_COUNT > 1
+    if (!(TIM8->BDTR & TIM_BDTR_MOE_Msk)) {
+        current1 = {0.0f, 0.0f};
+    }
+#endif
 
     motors[0].current_meas_cb(timestamp - TIM1_INIT_COUNT, current0);
-    //motors[1].current_meas_cb(timestamp, current1);
+#if AXIS_COUNT > 1
+    motors[1].current_meas_cb(timestamp, current1);
+#endif
 
     odrv.control_loop_cb(timestamp);
 
@@ -553,21 +599,29 @@ void ControlLoop_IRQHandler(void) {
 
     if (!fetch_and_reset_adcs(&current0, &current1)) {
         motors[0].disarm_with_error(Motor::ERROR_BAD_TIMING);
-    //    motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
+#if AXIS_COUNT > 1
+        motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
+#endif
     }
 
     motors[0].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1) - TIM1_INIT_COUNT, current0);
-    //motors[1].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1), current1);
+#if AXIS_COUNT > 1
+    motors[1].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1), current1);
+#endif
 
     motors[0].pwm_update_cb(timestamp + 3 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1) - TIM1_INIT_COUNT);
-    //motors[1].pwm_update_cb(timestamp + 3 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1));
+#if AXIS_COUNT > 1
+    motors[1].pwm_update_cb(timestamp + 3 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1));
+#endif
 
     // If we did everything right, the TIM8 update handler should have been
     // called exactly once between the start of this function and now.
 
     if (timestamp_ != timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1)) {
         motors[0].disarm_with_error(Motor::ERROR_CONTROL_DEADLINE_MISSED);
-        //motors[1].disarm_with_error(Motor::ERROR_CONTROL_DEADLINE_MISSED);
+#if AXIS_COUNT > 1
+        motors[1].disarm_with_error(Motor::ERROR_CONTROL_DEADLINE_MISSED);
+#endif
     }
 
     odrv.task_timers_armed_ = odrv.task_timers_armed_ && !TaskTimer::enabled;

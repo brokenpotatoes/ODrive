@@ -1,4 +1,3 @@
-
 -- Utility functions -----------------------------------------------------------
 
 function run_now(command)
@@ -321,6 +320,7 @@ boards = {
     ["v3.5-48V"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=5 -DHW_VERSION_VOLTAGE=48"}},
     ["v3.6-24V"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=6 -DHW_VERSION_VOLTAGE=24"}},
     ["v3.6-56V"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=6 -DHW_VERSION_VOLTAGE=56"}},
+    ["mks-xdrive-mini"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=6 -DHW_VERSION_VOLTAGE=56 -DCONFIG_MKS_XDRIVE_MINI=1"}},
     ["v4.0-56V"] = {include={board_v4}, cflags={"-DHW_VERSION_MINOR=0 -DHW_VERSION_VOLTAGE=56"}},
     ["v4.1-58V"] = {include={board_v4}, cflags={"-DHW_VERSION_MINOR=1 -DHW_VERSION_VOLTAGE=58"}},
 }
@@ -421,11 +421,28 @@ print('Using python command "'..python_command..'"')
 -- Autogen files from YAML interface definitions
 -- Pass YAML via stdin instead of file to avoid Tup's file descriptor interception
 root_interface = board.include[1].root_interface
-yaml_file = tup.getcwd() .. '/odrive-interface.yaml'
-tup.frule{inputs={'fibre-cpp/interfaces_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template %f --output %o', outputs='autogen/interfaces.hpp'}
-tup.frule{inputs={'fibre-cpp/function_stubs_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template %f --output %o', outputs='autogen/function_stubs.hpp'}
-tup.frule{inputs={'fibre-cpp/endpoints_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --generate-endpoints '..root_interface..' --template %f --output %o', outputs='autogen/endpoints.hpp'}
-tup.frule{inputs={'fibre-cpp/type_info_template.j2'}, command='cat '..yaml_file..' | '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template %f --output %o', outputs='autogen/type_info.hpp'}
+fw_dir = tup.getcwd()
+
+if boardversion == 'mks-xdrive-mini' then
+    -- For MKS, filter the canonical YAML to remove axis1
+    tup.frule{
+        inputs={'odrive-interface.yaml', 'filter_interface_yaml.py'},
+        command='cat odrive-interface.yaml | '..python_command..' filter_interface_yaml.py - autogen/odrive-interface.filtered.yaml --strip-axis1',
+        outputs='autogen/odrive-interface.filtered.yaml',
+    }
+    
+    -- Use the filtered YAML via stdin to avoid Tup's file descriptor interception
+    tup.frule{inputs={'fibre-cpp/interfaces_template.j2', 'autogen/odrive-interface.filtered.yaml'}, command='<autogen/odrive-interface.filtered.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template fibre-cpp/interfaces_template.j2 --output autogen/interfaces.hpp', outputs='autogen/interfaces.hpp'}
+    tup.frule{inputs={'fibre-cpp/function_stubs_template.j2', 'autogen/odrive-interface.filtered.yaml'}, command='<autogen/odrive-interface.filtered.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template fibre-cpp/function_stubs_template.j2 --output autogen/function_stubs.hpp', outputs='autogen/function_stubs.hpp'}
+    tup.frule{inputs={'fibre-cpp/endpoints_template.j2', 'autogen/odrive-interface.filtered.yaml'}, command='<autogen/odrive-interface.filtered.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --generate-endpoints '..root_interface..' --template fibre-cpp/endpoints_template.j2 --output autogen/endpoints.hpp', outputs='autogen/endpoints.hpp'}
+    tup.frule{inputs={'fibre-cpp/type_info_template.j2', 'autogen/odrive-interface.filtered.yaml'}, command='<autogen/odrive-interface.filtered.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template fibre-cpp/type_info_template.j2 --output autogen/type_info.hpp', outputs='autogen/type_info.hpp'}
+else
+    -- For other board versions, use the canonical YAML via stdin
+    tup.frule{inputs={'fibre-cpp/interfaces_template.j2', 'odrive-interface.yaml'}, command='<odrive-interface.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template fibre-cpp/interfaces_template.j2 --output autogen/interfaces.hpp', outputs='autogen/interfaces.hpp'}
+    tup.frule{inputs={'fibre-cpp/function_stubs_template.j2', 'odrive-interface.yaml'}, command='<odrive-interface.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template fibre-cpp/function_stubs_template.j2 --output autogen/function_stubs.hpp', outputs='autogen/function_stubs.hpp'}
+    tup.frule{inputs={'fibre-cpp/endpoints_template.j2', 'odrive-interface.yaml'}, command='<odrive-interface.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --generate-endpoints '..root_interface..' --template fibre-cpp/endpoints_template.j2 --output autogen/endpoints.hpp', outputs='autogen/endpoints.hpp'}
+    tup.frule{inputs={'fibre-cpp/type_info_template.j2', 'odrive-interface.yaml'}, command='<odrive-interface.yaml '..python_command..' interface_generator_stub.py --definitions /dev/stdin --template fibre-cpp/type_info_template.j2 --output autogen/type_info.hpp', outputs='autogen/type_info.hpp'}
+end
 
 
 add_pkg(board)

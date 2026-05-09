@@ -1,6 +1,8 @@
 # Copy this file to tup.config and adapt it to your needs
 # make sure this fits your board
-#CONFIG_BOARD_VERSION=v3.6-56V
+# Example board selection (uncomment one):
+#CONFIG_BOARD_VERSION=v3.6-56V   # Original ODrive board
+#CONFIG_BOARD_VERSION=mks-xdrive-mini   # MKS XDrive Mini (56V)
 CONFIG_DEBUG=false
 CONFIG_DOCTEST=false
 CONFIG_USE_LTO=false

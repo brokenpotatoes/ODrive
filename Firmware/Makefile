@@ -21,7 +21,10 @@ else
   $(error Python 3 is required. Found $(PYTHON), but it is not Python 3)
 endif
 
-ifneq (,$(findstring v3.,$(CONFIG_BOARD_VERSION)))
+ifneq (,$(filter mks-xdrive-mini,$(CONFIG_BOARD_VERSION)))
+	OPENOCD := openocd -f interface/stlink-v2.cfg $(PROGRAMMER_CMD) -f target/stm32f4x.cfg -c init
+	GDB := arm-none-eabi-gdb --ex 'target extended-remote | openocd -f "interface/stlink-v2.cfg" -f "target/stm32f4x.cfg" -c "gdb_port pipe; log_output openocd.log"' --ex 'monitor reset halt'
+else ifneq (,$(findstring v3.,$(CONFIG_BOARD_VERSION)))
   OPENOCD := openocd -f interface/stlink-v2.cfg $(PROGRAMMER_CMD) -f target/stm32f4x.cfg -c init
   GDB := arm-none-eabi-gdb --ex 'target extended-remote | openocd -f "interface/stlink-v2.cfg" -f "target/stm32f4x.cfg" -c "gdb_port pipe; log_output openocd.log"' --ex 'monitor reset halt'
 else ifneq (,$(findstring v4.,$(CONFIG_BOARD_VERSION)))
